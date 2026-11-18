@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💌 Приглашение на свидание</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh;
+    background:linear-gradient(135deg,#fce7f3,#fdf2f8,#f3e8ff); padding:20px;
+    -webkit-font-smoothing:antialiased; }
+  .container { max-width:520px; margin:0 auto; }
+  h1 { text-align:center; color:#e11d48; font-size:28px; margin-bottom:8px; }
+  .subtitle { text-align:center; color:#6b7280; margin-bottom:24px; font-size:14px; }
+  .card { background:white; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,.1); padding:24px; }
+  .field { margin-bottom:16px; animation:slideIn .3s ease-out; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+  label { display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px; }
+  input[type="text"], input[type="date"], input[type="time"], textarea { 
+    width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px;
+    font-size:14px; font-family:inherit; outline:none; transition:all .2s; background:white; }
+  input:focus,textarea:focus { border-color:#f43f5e; box-shadow:0 0 0 3px rgba(244,63,94,.12); }
+  
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .themes { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .theme-btn { padding:10px 4px; border:2px solid #e5e7eb; border-radius:10px; background:white;
+    cursor:pointer; text-align:center; transition:all .2s; font-family:inherit; }
+  .theme-btn:hover { border-color:#f9a8d4; }
+  .theme-btn.active { border-color:#f43f5e; background:#fff1f2; transform:scale(1.05); }
+  .theme-emoji { font-size:24px; display:block; }
+  .theme-name { font-size:11px; color:#374151; margin-top:4px; }
+
+  .create-btn { width:100%; padding:14px; border:none; border-radius:10px;
+    background:linear-gradient(90deg,#f43f5e,#ec4899); color:white; font-size:16px;
+    font-weight:700; cursor:pointer; transition:all .2s; font-family:inherit; margin-top:10px;}
+  .create-btn:hover:not(:disabled) { opacity:.92; transform:translateY(-1px); }
+  
+  .result { background:#f0fdf4; border:1px solid #86efac; border-radius:12px;
+    padding:16px; margin-top:16px; animation:slideIn .4s ease-out; }
+  .result-title { font-size:13px; color:#166534; font-weight:600; margin-bottom:8px; }
+  .link-row { display:flex; gap:8px; margin-bottom:10px; }
+  .link-input { flex:1; font-size:11px; padding:8px; background:white;
+    border:1px solid #d1d5db; border-radius:6px; color:#374151; }
+  .copy-btn { padding:0 14px; background:#16a34a; color:white; border:none; border-radius:6px;
+    font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; font-family:inherit; }
+  .copy-btn:hover { background:#15803d; }
+  .share-btns { display:flex; gap:6px; justify-content:center; }
+  .share-btn { padding:6px 12px; border:none; border-radius:6px; font-size:12px;
+    color:white; cursor:pointer; font-weight:600; font-family:inherit; }
+  .tg { background:#0088cc; } .wa { background:#25D366; }
+  .preview-hint { text-align:center; font-size:12px; color:#6b7280; margin-top:12px; }
+
+  /* Экран приглашения */
+  .invite-view { display:none; min-height:100vh; padding:20px; align-items:center;
+    justify-content:center; overflow:hidden; position:relative; }
+  .invite-view.show { display:flex; }
+  .invite-view.romantic { background:linear-gradient(135deg,#f472b6,#e11d48,#be123c); }
+  .invite-view.sunset { background:linear-gradient(135deg,#fb923c,#ec4899,#9333ea); }
+  .invite-view.night { background:linear-gradient(135deg,#4338ca,#6b21a8,#000); }
+  .invite-view.nature { background:linear-gradient(135deg,#4ade80,#14b8a6,#059669); }
+  
+  .hearts { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .heart { position:absolute; font-size:28px; opacity:.3;
+    animation:floatHeart 3s ease-in-out infinite; user-select:none; }
+  @keyframes floatHeart { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-14px);} }
+  
+  .invite-card { background:rgba(255,255,255,.15); backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.3);
+    border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,.2); padding:36px 28px;
+    max-width:480px; width:100%; text-align:center; color:white; position:relative;
+    z-index:10; animation:fadeIn .6s ease-out; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+  .envelope { font-size:60px; margin-bottom:12px; display:inline-block;
+    animation:heartbeat 1.5s ease-in-out infinite; }
+  @keyframes heartbeat { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
+  .invite-for { font-size:12px; text-transform:uppercase; letter-spacing:3px;
+    opacity:.8; margin-bottom:6px; }
+  .invite-to { font-size:34px; font-weight:700; margin-bottom:12px; }
+  .invite-from { font-size:16px; opacity:.9; margin-bottom:16px; }
+  .invite-message { font-size:18px; font-style:italic; margin-bottom:20px; line-height:1.4; }
+  .invite-details { background:rgba(255,255,255,.2); border-radius:12px; padding:14px;
+    margin-bottom:24px; text-align:left; font-size:14px; line-height:1.7; }
+  
+  /* ===== ЦВЕТА ДЛЯ ВОПРОСОВ И ОТВЕТОВ ===== */
+  .question-text { font-size:18px; font-weight:600; margin-bottom:20px; }
+  .result-title { font-size:24px; font-weight:700; margin-bottom:8px; line-height: 1.3;}
+  
+  .invite-view .question-text, .invite-view .result-title { color: white; }
+  .invite-view.night .question-text, .invite-view.night .result-title { color: #ffffff !important; }
+  .invite-view.romantic .question-text, .invite-view.romantic .result-title { color: #ffe4e6 !important; }
+
+  .buttons-area { position:relative; height:130px; }
+  .yes-btn { position:absolute; left:50%; top:10px; transform:translateX(-50%);
+    background:white; color:#e11d48; border:none; padding:14px 40px; border-radius:50px;
+    font-size:18px; font-weight:700; cursor:pointer; box-shadow:0 10px 25px rgba(0,0,0,.15);
+    transition:all .2s; font-family:inherit; z-index:20; }
+  .yes-btn:hover { transform:translateX(-50%) scale(1.1); }
+  .no-btn { position:absolute; left:50%; top:80px; transform:translateX(-50%);
+    background:rgba(255,255,255,.3); color:white; border:none; padding:10px 24px;
+    border-radius:50px; font-size:14px; cursor:pointer; transition:transform .25s ease-out;
+    font-family:inherit; white-space:nowrap; }
+  
+  .answer-result { animation:pop .4s ease-out; }
+  @keyframes pop { from{opacity:0;transform:scale(.5);} to{opacity:1;transform:scale(1);} }
+  
+  /* Карточки выбора места */
+  .places-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin: 15px 0; }
+  .place-card { padding:15px 10px; border:2px solid rgba(255,255,255,0.4); border-radius:12px; background:rgba(255,255,255,0.1);
+    cursor:pointer; text-align:center; transition:all .2s; font-family:inherit; color: white; }
+  .place-card:hover { border-color:white; background:rgba(255,255,255,0.2); }
+  .place-card.active { border-color:white; background:rgba(255,255,255,0.3); transform:scale(1.02); }
+  .place-emoji { font-size:28px; display:block; margin-bottom:6px; }
+  .place-name { font-size:13px; font-weight:600; }
+  
+  .custom-input { display:none; width:100%; padding:10px; border-radius:8px; border:none; 
+    font-size:14px; margin-bottom:10px; outline:none; color: #333; }
+  
+  .result-emoji { font-size:64px; margin-bottom:12px; }
+  .result-text { font-size:16px; opacity:.9; line-height: 1.5; }
+  .new-btn { margin-top:20px; padding:10px 20px; background:rgba(255,255,255,.25);
+    color:white; border:1px solid rgba(255,255,255,.4); border-radius:50px;
+    font-size:13px; cursor:pointer; font-family:inherit; }
+  .new-btn:hover { background:rgba(255,255,255,.35); }
+</style>
+</head>
+<body>
+
+<div class="container" id="createScreen">
+  <h1>💌 Создай приглашение</h1>
+  <p class="subtitle">Поделись ссылкой — и пусть сердце ответит «Да»</p>
+  <div class="card">
+    <div class="row">
+      <div class="field"><label>От кого</label>
+        <input type="text" id="fromName" placeholder="Твоё имя" maxlength="60"></div>
+      <div class="field"><label>Кому</label>
+        <input type="text" id="toName" placeholder="Её/его имя" maxlength="60"></div>
+    </div>
+    
+    <div class="field"><label>Сообщение</label>
+      <textarea id="message" maxlength="300">У меня к тебе важный вопрос…</textarea></div>
+    
+    <div class="row">
+      <div class="field"><label>Дата</label><input type="date" id="date"></div>
+      <div class="field"><label>Время</label><input type="time" id="time"></div>
+    </div>
+
+    <div class="field"><label>Тема оформления</label>
+      <div class="themes" id="themes"></div></div>
+      
+    <button class="create-btn" id="createBtn">Создать приглашение ✨</button>
+    
+    <div class="result" id="result" style="display:none;">
+      <div class="result-title">Готово! Отправь эту ссылку:</div>
+      <div class="link-row">
+        <input class="link-input" id="linkInput" readonly>
+        <button class="copy-btn" id="copyBtn">Копировать</button>
+      </div>
+      <div class="share-btns">
+        <button class="share-btn tg" id="shareTg">Telegram</button>
+        <button class="share-btn wa" id="shareWa">WhatsApp</button>
+      </div>
+      <p class="preview-hint">
+        <a href="#" id="previewLink" style="color:#166534;font-weight:600;">👁 Посмотреть как увидит она/он</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="invite-view" id="inviteScreen">
+  <div class="hearts" id="hearts"></div>
+  <div class="invite-card" id="inviteCard"></div>
+</div>
+
+<script>
+const THEMES = [
+  { id:"romantic", name:"Романтика", emoji:"💖" },
+  { id:"sunset",   name:"Закат",     emoji:"🌅" },
+  { id:"night",    name:"Ночь",      emoji:"🌙" },
+  { id:"nature",   name:"Природа",   emoji:"🌿" }
+];
+let currentTheme = "romantic";
+
+const themesEl = document.getElementById("themes");
+THEMES.forEach(t => {
+  const btn = document.createElement("button");
+  btn.className = "theme-btn" + (t.id === currentTheme ? " active" : "");
+  btn.dataset.theme = t.id;
+  btn.innerHTML = `<span class="theme-emoji">${t.emoji}</span><span class="theme-name">${t.name}</span>`;
+  btn.onclick = () => {
+    currentTheme = t.id;
+    document.querySelectorAll(".theme-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  };
+  themesEl.appendChild(btn);
+});
+
+function encodeInvite(data) {
+  const json = JSON.stringify(data);
+  const bytes = new TextEncoder().encode(json);
+  let binary = "";
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function decodeInvite(str) {
+  try {
+    let b64 = str.replace(/-/g,"+").replace(/_/g,"/");
+    while (b64.length % 4) b64 += "=";
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch { return null; }
+}
+
+document.getElementById("createBtn").onclick = () => {
+  const fromName = document.getElementById("fromName").value.trim();
+  const toName = document.getElementById("toName").value.trim();
+  if (!fromName || !toName) { alert("Заполни «От кого» и «Кому»"); return; }
+
+  const data = {
+    f: fromName.slice(0,60),
+    t: toName.slice(0,60),
+    m: document.getElementById("message").value.trim().slice(0,300),
+    d: document.getElementById("date").value,
+    ti: document.getElementById("time").value,
+    th: currentTheme
+  };
+  const encoded = encodeInvite(data);
+  const base = window.location.href.split("#")[0].split("?")[0];
+  const link = base + "#i=" + encoded;
+  document.getElementById("linkInput").value = link;
+  document.getElementById("result").style.display = "block";
+  document.getElementById("previewLink").href = link;
+};
+
+document.getElementById("copyBtn").onclick = async () => {
+  const input = document.getElementById("linkInput");
+  try { await navigator.clipboard.writeText(input.value); }
+  catch { input.select(); document.execCommand("copy"); }
+  const btn = document.getElementById("copyBtn");
+  btn.textContent = "✓ Скопировано";
+  setTimeout(() => btn.textContent = "Копировать", 2000);
+};
+
+function share(net) {
+  const link = document.getElementById("linkInput").value;
+  const text = "Привет! У меня к тебе приглашение 💌";
+  const urls = {
+    tg:`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`,
+    wa:`https://wa.me/?text=${encodeURIComponent(text+" "+link)}`
+  };
+  window.open(urls[net],"_blank");
+}
+document.getElementById("shareTg").onclick = () => share("tg");
+document.getElementById("shareWa").onclick = () => share("wa");
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g,c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function showInvite(data) {
+  document.getElementById("createScreen").style.display = "none";
+  const screen = document.getElementById("inviteScreen");
+  screen.classList.add("show", data.th || "romantic");
+
+  const heartsEl = document.getElementById("hearts");
+  const emojis = ["❤️","💖","💕","💗"];
+  for (let i=0;i<15;i++) {
+    const h = document.createElement("div");
+    h.className = "heart";
+    h.textContent = emojis[i%4];
+    h.style.left = (i*17)%100 + "%";
+    h.style.top = (i*23)%100 + "%";
+    h.style.animationDelay = (i*0.4)+"s";
+    h.style.animationDuration = (3+(i%3))+"s";
+    heartsEl.appendChild(h);
+  }
+
+  let detailsHtml = "";
+  if (data.d || data.ti) {
+    detailsHtml = '<div class="invite-details">';
+    if (data.d) {
+      const d = new Date(data.d + "T00:00:00");
+      const dateStr = d.toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"});
+      detailsHtml += `<div>📅 <b>${dateStr}</b>${data.ti ? " в "+data.ti : ""}</div>`;
+    }
+    detailsHtml += "</div>";
+  }
+
+  document.getElementById("inviteCard").innerHTML = `
+    <div class="envelope">💌</div>
+    <div class="invite-for">Приглашение для</div>
+    <div class="invite-to">${escapeHtml(data.t)}</div>
+    <div class="invite-from">от <b>${escapeHtml(data.f)}</b></div>
+    <div class="invite-message">«${escapeHtml(data.m)}»</div>
+    ${detailsHtml}
+    <div id="questionBlock">
+      <div class="question-text">Пойдёшь со мной?</div>
+      <div class="buttons-area">
+        <button class="yes-btn" id="yesBtn">Да 💖</button>
+        <button class="no-btn" id="noBtn">Нет</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("yesBtn").onclick = () => {
+    document.getElementById("questionBlock").innerHTML = `
+      <div class="answer-result">
+        <div class="result-title" style="font-size: 20px; margin-bottom: 15px;">Чем займемся?</div>
+        <div class="places-grid">
+          <button class="place-card" data-place="Еда"><span class="place-emoji">🍕</span><span class="place-name">Еда</span></button>
+          <button class="place-card" data-place="Кино"><span class="place-emoji">🎬</span><span class="place-name">Кино</span></button>
+          <button class="place-card" data-place="Прогулка"><span class="place-emoji">🌳</span><span class="place-name">Прогулка</span></button>
+          <button class="place-card" data-place="custom" id="customPlaceBtn"><span class="place-emoji">✨</span><span class="place-name">Свой вариант</span></button>
+        </div>
+        <input type="text" id="customPlaceInput" class="custom-input" placeholder="Напиши свой вариант..." maxlength="120">
+      </div>
+    `;
+
+    const placeCards = document.querySelectorAll(".place-card");
+    const customInput = document.getElementById("customPlaceInput");
+    
+    placeCards.forEach(card => {
+      card.onclick = () => {
+        placeCards.forEach(c => c.classList.remove("active"));
+        card.classList.add("active");
+        
+        if (card.dataset.place === "custom") {
+          customInput.style.display = "block";
+          customInput.focus();
+        } else {
+          customInput.style.display = "none";
+          finishSelection(card.dataset.place);
+        }
+      };
+    });
+
+    customInput.onkeydown = (e) => {
+      if (e.key === "Enter" && customInput.value.trim()) {
+        finishSelection(customInput.value.trim());
+      }
+    };
+  };
+
+  function finishSelection(placeText) {
+    document.getElementById("questionBlock").innerHTML = `
+      <div class="answer-result">
+        <div class="result-emoji">🎉</div>
+        <div class="result-title">А то я так и знала, что ты согласишься!</div>
+        <div class="result-text">С нетерпением жду нашей встречи. <br><br> <b>Твой выбор:</b> ${escapeHtml(placeText)}</div>
+        <button class="new-btn" onclick="window.location.href=window.location.href.split('#')[0]">
+          Создать своё приглашение
+        </button>
+      </div>
+    `;
+  }
+
+  let noScale = 1;
+  const noBtn = document.getElementById("noBtn");
+  const runAway = () => {
+    const x = (Math.random()-.5)*300;
+    const y = (Math.random()-.5)*200;
+    noScale = Math.max(.35, noScale-.08);
+    noBtn.style.transform = `translate(calc(-50% + ${x}px), ${y}px) scale(${noScale})`;
+  };
+  noBtn.addEventListener("mouseenter", runAway);
+  noBtn.addEventListener("click", runAway);
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const hash = window.location.hash;
+  if (hash.startsWith("#i=")) {
+    const data = decodeInvite(hash.slice(3));
+    if (data && data.f && data.t) showInvite(data);
+  }
+});
+</script>
+</body>
+</html>
